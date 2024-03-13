@@ -94,15 +94,21 @@ class ComplexNumber:
         :type other: ComplexNumber or float
         :return: The result of the division.
         :rtype: ComplexNumber
+        :raises ZeroDivisionError: If attempting to divide by a complex or real number
+        with magnitude zero.
         """
         if isinstance(other, ComplexNumber):
             denom = other.real**2 + other.imaginary**2
+            if denom == 0:
+                raise ZeroDivisionError("Attempt to divide by zero magnitude")
             real = (self.real * other.real + self.imaginary * other.imaginary) / denom
             imaginary = (
                 self.imaginary * other.real - self.real * other.imaginary
             ) / denom
         elif isinstance(other, (int, float)):
             denom = other**2
+            if denom == 0:
+                raise ZeroDivisionError("Attempt to divide by zero")
             real = self.real * other / denom
             imaginary = self.imaginary * other / denom
         else:
