@@ -1,6 +1,7 @@
 import unittest
 import logging
 import operator
+import cmath
 from parameterized import parameterized
 
 from complex_number.complex_number import ComplexNumber
@@ -8,7 +9,7 @@ from complex_number.complex_number import ComplexNumber
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 
-test_numbers = [
+complex_test_numbers = [
     (0, 0),  # Origin complex number
     (1, 0),  # Pure real complex number
     (0, 1),  # Pure imaginary complex number
@@ -17,6 +18,9 @@ test_numbers = [
     (3, 4),  # Arbitrary positive complex number
     (-3, -4),  # Arbitrary negative complex number
     (1e-3, -1e-3),  # Small magnitude complex number
+]
+
+real_test_numbers = [
     0,  # Zero
     3,  # Arbitrary positive number
     -3,  # Arbitrary negative number
@@ -52,8 +56,8 @@ class TestComplexNumber(unittest.TestCase):
         [
             (op_name, op_func, lhs, rhs)
             for op_name, op_func in operations.items()
-            for lhs in test_numbers
-            for rhs in test_numbers
+            for lhs in complex_test_numbers + real_test_numbers
+            for rhs in complex_test_numbers + real_test_numbers
             if not (isinstance(lhs, (int, float)) and isinstance(rhs, (int, float)))
         ]
     )
@@ -88,8 +92,8 @@ class TestComplexNumber(unittest.TestCase):
     @parameterized.expand(
         [
             (lhs, rhs)
-            for lhs in test_numbers
-            for rhs in test_numbers
+            for lhs in complex_test_numbers + real_test_numbers
+            for rhs in complex_test_numbers + real_test_numbers
             if not (isinstance(lhs, (int, float)) and isinstance(rhs, (int, float)))
         ]
     )
@@ -104,26 +108,14 @@ class TestComplexNumber(unittest.TestCase):
             logging.debug(f"Testing {test_lhs} == {test_rhs} = {actual_result}")
             self.assertEqual(actual_result, expected_result)
 
-    @parameterized.expand(
-        [
-            (real, imaginary, expected)
-            for real, imaginary, expected in test_representations
-        ]
-    )
+    @parameterized.expand(test_representations)
     def test_repr(self, real, imaginary, expected):
         test_instance = ComplexNumber(real, imaginary)
         test_str = repr(test_instance)
         logging.debug(f"Testing repr {test_str} == {expected}")
         self.assertEqual(test_str, expected)
 
-    @parameterized.expand(
-        [
-            # Filter to include only tuples, which represent complex numbers
-            test_number
-            for test_number in test_numbers
-            if isinstance(test_number, tuple)
-        ]
-    )
+    @parameterized.expand(complex_test_numbers)
     def test_conjugate(self, real, imaginary):
         complex_number = ComplexNumber(real, imaginary)
         conjugate_number = complex_number.conjugate()
@@ -135,3 +127,50 @@ class TestComplexNumber(unittest.TestCase):
         logging.debug(f"Testing conjugate {conjugate_number} == {expected_conjugate}")
         self.assertEqual(conjugate_number.real, expected_conjugate.real)
         self.assertEqual(conjugate_number.imaginary, expected_conjugate.imag)
+
+    @parameterized.expand(complex_test_numbers)
+    def test_sqrt(self, real, imaginary):
+        complex_number = ComplexNumber(real, imaginary)
+        control_number = complex(real, imaginary)
+        test_result = complex_number.sqrt()
+        expected_result = cmath.sqrt(control_number)
+        self.assertAlmostEqual(test_result.real, expected_result.real)
+        self.assertAlmostEqual(test_result.imaginary, expected_result.imag)
+
+    @parameterized.expand(complex_test_numbers)
+    def test_modulus(self, real, imaginary):
+        complex_number = ComplexNumber(real, imaginary)
+        control_number = complex(real, imaginary)
+        test_result = complex_number.modulus()
+        expected_result = abs(control_number)
+        self.assertEqual(test_result, expected_result)
+
+    @parameterized.expand(complex_test_numbers)
+    def test_argument(self, real, imaginary):
+        complex_number = ComplexNumber(real, imaginary)
+        control_number = complex(real, imaginary)
+        test_result = complex_number.argument()
+        expected_result = cmath.phase(control_number)
+        self.assertEqual(test_result, expected_result)
+
+    @parameterized.expand(complex_test_numbers)
+    def test_to_polar(self, real, imaginary):
+        complex_number = ComplexNumber(real, imaginary)
+        control_number = complex(real, imaginary)
+        test_result = complex_number.to_polar()
+        expected_result = cmath.polar(control_number)
+        self.assertAlmostEqual(test_result[0], expected_result[0])
+        self.assertAlmostEqual(test_result[1], expected_result[1])
+
+    @parameterized.expand(
+        [
+            (magnitude, angle)
+            for magnitude, angle in complex_test_numbers  # Re-using the tuple
+            if magnitude >= 0
+        ]
+    )
+    def test_from_polar(self, magnitude, angle):
+        complex_number = ComplexNumber.from_polar(magnitude, angle)
+        control_number = cmath.rect(magnitude, angle)
+        self.assertAlmostEqual(complex_number.real, control_number.real)
+        self.assertAlmostEqual(complex_number.imaginary, control_number.imag)
