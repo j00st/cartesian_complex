@@ -1,4 +1,5 @@
 import math
+from typing import Union
 
 
 class ComplexNumber:
@@ -29,12 +30,12 @@ class ComplexNumber:
         else:
             return f"({self.real}{'+' if self.imaginary >= 0 else ''}{self.imaginary}j)"
 
-    def __add__(self, other: "ComplexNumber") -> "ComplexNumber":
+    def __add__(self, other: Union[int, float, "ComplexNumber"]) -> "ComplexNumber":
         """
         Adds a real or complex number to this complex number.
 
         :param other: The other complex or real number to add.
-        :type other: ComplexNumber or float
+        :type other: Union[int, float, ComplexNumber]
         :return: The result of the addition.
         :rtype: ComplexNumber
         """
@@ -48,12 +49,23 @@ class ComplexNumber:
             return NotImplemented
         return ComplexNumber(real, imaginary)
 
-    def __sub__(self, other: "ComplexNumber") -> "ComplexNumber":
+    def __radd__(self, other: Union[int, float, "ComplexNumber"]) -> "ComplexNumber":
+        """
+        Adds this complex number to a real or complex number.
+
+        :param other: The other complex or real number to add.
+        :type other: Union[int, float, ComplexNumber]
+        :return: The result of the addition.
+        :rtype: ComplexNumber
+        """
+        return self.__add__(other)
+
+    def __sub__(self, other: Union[int, float, "ComplexNumber"]) -> "ComplexNumber":
         """
         Subtracts a real or complex number from this complex number.
 
         :param other: The other complex or real number to subtract.
-        :type other: ComplexNumber or float
+        :type other: Union[int, float, ComplexNumber]
         :return: The result of the subtraction.
         :rtype: ComplexNumber
         """
@@ -67,12 +79,27 @@ class ComplexNumber:
             return NotImplemented
         return ComplexNumber(real, imaginary)
 
-    def __mul__(self, other: "ComplexNumber") -> "ComplexNumber":
+    def __rsub__(self, other: Union[int, float, "ComplexNumber"]) -> "ComplexNumber":
+        """
+        Subtracts this complex number from a real or complex number.
+
+        :param other: The real or complex number from which to subtract.
+        :type other: Union[int, float, ComplexNumber]
+        :return: The result of the subtraction.
+        :rtype: ComplexNumber
+        """
+        if isinstance(other, (int, float)):
+            # Create a temporary ComplexNumber from other to perform subtraction
+            return ComplexNumber(real=other - self.real, imaginary=-self.imaginary)
+        else:
+            return NotImplemented
+
+    def __mul__(self, other: Union[int, float, "ComplexNumber"]) -> "ComplexNumber":
         """
         Multiplies this complex number with a real or complex number.
 
         :param other: The other complex or real number to multiply.
-        :type other: ComplexNumber or float
+        :type other: Union[int, float, ComplexNumber]
         :return: The result of the multiplication.
         :rtype: ComplexNumber
         """
@@ -85,6 +112,17 @@ class ComplexNumber:
         else:
             return NotImplemented
         return ComplexNumber(real, imaginary)
+
+    def __rmul__(self, other: Union[int, float, "ComplexNumber"]) -> "ComplexNumber":
+        """
+        Multiplies this complex number with a real or complex number.
+
+        :param other: The other complex or real number to multiply.
+        :type other: Union[int, float, ComplexNumber]
+        :return: The result of the multiplication.
+        :rtype: ComplexNumber
+        """
+        return self.__mul__(other)
 
     def __truediv__(self, other: "ComplexNumber") -> "ComplexNumber":
         """
@@ -115,21 +153,63 @@ class ComplexNumber:
             return NotImplemented
         return ComplexNumber(real, imaginary)
 
-    def __pow__(self, exponent: float) -> "ComplexNumber":
+    def __rtruediv__(
+        self, other: Union[int, float, "ComplexNumber"]
+    ) -> "ComplexNumber":
+        """
+        Divides a real or complex number by this complex number.
+
+        :param other: The real or complex number to be divided by this complex number.
+        :type other: Union[int, float, ComplexNumber]
+        :return: The result of the division.
+        :rtype: ComplexNumber
+        """
+        if isinstance(other, (int, float)):
+            # Convert the real number to a ComplexNumber for division
+            other = ComplexNumber(real=other, imaginary=0)
+            return other.__truediv__(self)
+        else:
+            return NotImplemented
+
+    def __pow__(self, exponent: Union[int, float]) -> "ComplexNumber":
         """
         Raises the complex number to the power of 'exponent'.
 
         :param exponent: The exponent to raise the complex number to.
-        :type exponent: float
+        :type exponent: Union[int, float]
         :return: The complex number raised to the specified power.
         :rtype: ComplexNumber
         """
-        magnitude, angle = self.to_polar()
-        magnitude **= exponent
-        angle *= exponent
-        return ComplexNumber.from_polar(magnitude, angle)
+        if isinstance(exponent, (int, float)):
+            if self.real == self.imaginary == 0 and exponent < 0:
+                raise ZeroDivisionError("0 cannot be raised to a negative power")
+            magnitude, angle = self.to_polar()
+            magnitude **= exponent
+            angle *= exponent
+            return ComplexNumber.from_polar(magnitude, angle)
+        else:
+            # TODO: Implement exponentiation with complex number as exponent
+            return NotImplemented
 
-    def __eq__(self, other: "ComplexNumber") -> bool:
+    def __rpow__(self, base: Union[int, float]) -> "ComplexNumber":
+        """
+        Raises a real number to the power of this complex number.
+
+        :param exponent: The exponent to raise the complex number to.
+        :type base: Union[int, float]
+        :return: The complex number raised to the specified power.
+        :rtype: ComplexNumber
+        """
+        if isinstance(base, (int, float)) and base <= 0:
+            log_base = math.log(base)
+            magnitude, angle = self.to_polar()
+            result_magnitude = math.exp(log_base * magnitude * math.cos(angle))
+            result_angle = log_base * magnitude * math.sin(angle)
+            return ComplexNumber.from_polar(result_magnitude, result_angle)
+        else:
+            return NotImplemented
+
+    def __eq__(self, other: Union[int, float, "ComplexNumber"]) -> bool:
         """
         Checks if two complex numbers are equal.
 
@@ -139,7 +219,12 @@ class ComplexNumber:
         False otherwise.
         :rtype: bool
         """
-        return self.real == other.real and self.imaginary == other.imaginary
+        if isinstance(other, ComplexNumber):
+            return self.real == other.real and self.imaginary == other.imaginary
+        elif isinstance(other, (int, float)):
+            return self.real == other and self.imaginary == 0
+        else:
+            return False
 
     def sqrt(self) -> "ComplexNumber":
         """
